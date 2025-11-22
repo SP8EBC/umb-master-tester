@@ -12,6 +12,7 @@
 #include "Mappings.h"
 
 #include <string>
+#include <memory>
 
 class AprsPacketWx: public AprsPacketFoundation {
 private:
@@ -23,11 +24,11 @@ private:
 	unsigned short qnh, qfe;
 
 	map<ChannelUsage, MeasurementUnit> &usageUnitMapping;
-	map<ChannelUsage, void*> &usageValuesMapping;
+	map<ChannelUsage, std::shared_ptr<ChannelValueFoundation>> &usageValuesMapping;
 
 
 public:
-	AprsPacketWx(AprsCall* s, AprsCall* d, map<ChannelUsage, MeasurementUnit>& unit, map<ChannelUsage, void*>& values);
+	AprsPacketWx(AprsCall* s, AprsCall* d, map<ChannelUsage, MeasurementUnit>& unit, map<ChannelUsage, std::shared_ptr<ChannelValueFoundation>>& values);
 	virtual ~AprsPacketWx();
 
 	string toString();

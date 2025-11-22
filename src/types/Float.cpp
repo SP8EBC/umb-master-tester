@@ -6,71 +6,86 @@
  */
 
 #include "Float.h"
+#include "ChannelType.h"
 #include "../aux/UnitsConversionMatrix.h"
 
-#include <sstream>
-#include <cstdio>
 #include <cmath>
+#include <cstdio>
+#include <sstream>
+
+
+#include <boost/core/span.hpp>
 
 
 const string Float::type = "float";
 
-Float::Float() {
+Float::Float ()
+{
 	// TODO Auto-generated constructor stub
 	value = &this->store;
-
 }
 
-Float::~Float() {
+Float::~Float ()
+{
 	// TODO Auto-generated destructor stub
 }
 
-string Float::getType() {
+string Float::getType ()
+{
 	return Float::type;
 }
 
-string Float::toAprsConvertedString(MeasurementUnit from, MeasurementUnit to) {
+string Float::toAprsConvertedString (MeasurementUnit from, MeasurementUnit to)
+{
 	float output = this->store * UnitsConversionMatrix::conversionMatrix[from][to];
-	if (to == DEGF)
-	{
+	if (to == DEGF) {
 		output += 32.0f;
 	}
-	if (to == HPA)
-	{
+	if (to == HPA) {
 		output *= 10.0f;
 	}
 
 	char s[6] = {0, 0, 0, 0, 0, 0};
 
 	if (to != HPA)
-		sprintf(s, "%03d", (int)round(output));
+		sprintf (s, "%03d", (int)round (output));
 	else
-		sprintf(s, "%05d", (int)round(output));
+		sprintf (s, "%05d", (int)round (output));
 
-
-	string o(s);
+	string o (s);
 
 	return o;
 }
 
-float Float::getValue() const {
+float Float::getValue () const
+{
 	return store;
 }
 
-Float::Float(float init) {
+Float::Float (float init)
+{
 	store = init;
 	value = &this->store;
-
 }
 
-void Float::setValue(float store) {
+void Float::putInto (std::vector<uint8_t> &vector, std::vector<uint8_t>::iterator &from)
+{
+	vector.push_back(FLOAT);	// channel type
+
+	void* ptr = &this->store;
+	boost::span<uint8_t, sizeof(float)> s((uint8_t*)ptr, sizeof(float));
+	vector.insert(from, s.begin(), s.end());
+}
+
+void Float::setValue (float store)
+{
 	this->store = store;
 }
 
-string Float::toString() {
+string Float::toString ()
+{
 	stringstream out;
 	out << this->store;
 
-	return out.str();
-
+	return out.str ();
 }

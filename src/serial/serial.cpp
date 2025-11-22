@@ -19,6 +19,8 @@
 
 #include "../config/ProgramConfig.h"
 
+#include "spdlog/fmt/bin_to_hex.h"
+
 #define SOH 0x01
 #define STX 0x02
 #define ETX 0x03
@@ -30,12 +32,12 @@
 
 using namespace std;
 
-serial::serial ()
+serial::serial () : handle (-1)
 {
-	// TODO Auto-generated constructor stubes
+	logger = spdlog::stdout_color_mt ("serial");
 }
 
-void serial::transmitUmb (UmbFrameRaw *in)
+void serial::transmitUmb (UmbFrameRaw *in, uint16_t spoiledCrc)
 {
 	int i = 0;
 	unsigned short crc = 0xFFFF;
@@ -43,34 +45,41 @@ void serial::transmitUmb (UmbFrameRaw *in)
 	if (in == 0)
 		throw NullPointerE ();
 
-	char *txbuffer = new char[in->ln + 15];
-	memset (txbuffer, 0x00, in->ln + 15);
+	const std::size_t size = in->ln + 15;
+
+	char *txbuffer = new char[size];
+	memset (txbuffer, 0x00, size);
 
 	txbuffer[i++] = SOH;
 	txbuffer[i++] = V10;
-	txbuffer[i++] = in->slaveId;
-	txbuffer[i++] = in->slaveClass << 4;
-	txbuffer[i++] = ProgramConfig::getMasterId ();
-	txbuffer[i++] = 0xF0;
+	txbuffer[i++] = in->toId;
+	txbuffer[i++] = in->toClass << 4;
+	txbuffer[i++] = in->fromId;
+	txbuffer[i++] = in->fromClass << 4;
 	txbuffer[i++] = in->ln;
 	txbuffer[i++] = STX;
 	//
 	txbuffer[i++] = in->cmdId;
 	txbuffer[i++] = V10;
 	for (int j = 0; j < in->ln - 2; j++)
-		txbuffer[i++] = *(in->content + j);
+		txbuffer[i++] = in->content[j];
 	//
 	txbuffer[i++] = ETX;
-	for (int j = 0; j < i; j++)
-		crc = calc_crc (crc, txbuffer[j]);
-	txbuffer[i++] = crc & 0xFF;
-	txbuffer[i++] = (crc & 0xFF00) >> 8;
+	if (spoiledCrc == 0)
+	{
+		for (int j = 0; j < i; j++)
+			crc = calc_crc (crc, txbuffer[j]);
+		txbuffer[i++] = crc & 0xFF;
+		txbuffer[i++] = (crc & 0xFF00) >> 8;
+	}
+	else
+	{
+		txbuffer[i++] = spoiledCrc & 0xFF;
+		txbuffer[i++] = (spoiledCrc & 0xFF00) >> 8;
+	}
 	txbuffer[i++] = EOT;
 
-	printf ("serial::transmitUmb.txbuffer:");
-	for (int j = 0; j < in->ln + 15; j++)
-		printf (" 0x%x", txbuffer[j]);
-	printf ("\r\n");
+	logger->trace ("TX: {:n}", spdlog::to_hex (txbuffer, txbuffer + size));
 
 	write (handle, txbuffer, i);
 }
@@ -102,11 +111,7 @@ std::shared_ptr<UmbFrameRaw> serial::receiveUmb (unsigned short max_timeout)
 	for (; pos <= 7; pos++) {
 		gettimeofday (&timeout, NULL);
 		if (timeout.tv_sec - timeout_start.tv_sec > ProgramConfig::getTimeout ()) {
-			printf ("serial::receiveUmb.rx:");
-			for (unsigned j = 0; j < rx.size (); j++) {
-				printf (" 0x%x", (unsigned)rx.at (j));
-			}
-			printf ("\r\n");
+			logger->error ("RX: {:n}", spdlog::to_hex (rx.begin (), rx.end ()));
 
 			throw TimeoutE (); // TODO: zrobić rzucanie wyjątku
 		}
@@ -121,16 +126,10 @@ std::shared_ptr<UmbFrameRaw> serial::receiveUmb (unsigned short max_timeout)
 	ln_rcv = rx_buf;
 	ln_rcv += 12;
 
-	printf ("serial::receiveUmb.ln_rcv: 0x%x\r\n", ln_rcv);
-
 	for (; pos <= ln_rcv; pos++) {
 		gettimeofday (&timeout, NULL);
 		if (timeout.tv_sec - timeout_start.tv_sec > ProgramConfig::getTimeout ()) {
-			printf ("serial::receiveUmb.rx:");
-			for (unsigned j = 0; j < rx.size (); j++) {
-				printf (" 0x%x", (unsigned)rx.at (j));
-			}
-			printf ("\r\n");
+			logger->error ("RX: {:n}", spdlog::to_hex (rx.begin (), rx.end ()));
 
 			throw TimeoutE (); // TODO: zrobić rzucanie wyjątku
 		}
@@ -139,39 +138,31 @@ std::shared_ptr<UmbFrameRaw> serial::receiveUmb (unsigned short max_timeout)
 		if (n != 0)
 			rx.push_back (rx_buf);
 		else {
-			printf ("serial::receiveUmb.rx:");
-			for (unsigned j = 0; j < rx.size (); j++) {
-				printf (" 0x%x", (unsigned)rx.at (j));
-			}
-			printf ("\r\n");
+			logger->error ("RX: {:n}", spdlog::to_hex (rx.begin (), rx.end ()));
 
 			throw TimeoutE ();
 		}
 	}
 
-	for (unsigned j = 0; j < rx.size (); j++) {
-		printf (" 0x%x", (unsigned)rx.at (j));
-	}
-	printf ("\r\n");
+	logger->trace ("RX: {:n}", spdlog::to_hex (rx.begin (), rx.end ()));
 
 	out->ln = ln_rcv - 12; // everything between STX & ETX -> cmdId + V10 + command payload
 	out->bytesRxed = rx.size ();
 	out->cmdId = rx[8];
-
-	// memset (out->content, 0x00, out->ln - 2);
-	// memcpy(out->content, data + 10, out->ln -2);
-	// out->content.push_back(out->content.begin(), data+10, data + ())
 
 	// first byte of command payload after cmdId and V10
 	const std::vector<uint8_t>::const_iterator copy_from = rx.begin () + 10;
 	const std::vector<uint8_t>::const_iterator copy_to =
 		copy_from + (out->ln - 2); // minus cmdId and minus V10
 
-	out->content.insert(out->content.begin(), copy_from, copy_to);
+	out->content.insert (out->content.begin (), copy_from, copy_to);
 
-	out->slaveId = rx[4];
-	out->slaveClass = rx[5] >> 4;
 	out->protVersion = rx[1];
+	out->toId = rx[2];
+	out->toClass = rx[3] >> 4;
+	out->fromId = rx[4];
+	out->fromClass = rx[5] >> 4;
+
 
 	const uint8_t crcL = rx[out->bytesRxed - 3];
 	const uint8_t crcH = rx[out->bytesRxed - 2];
@@ -186,7 +177,12 @@ std::shared_ptr<UmbFrameRaw> serial::receiveUmb (unsigned short max_timeout)
 	if (crc == out->checksumRxed)
 		out->chceksumCorrectRX = true;
 
-	delete rx;
+	logger->info ("ln: {}, bytesRxed: {}, cmdId: 0x{:x}, deviceId: 0x{:x}, deviceClass: 0x{:x}",
+				  out->ln,
+				  out->bytesRxed,
+				  out->cmdId,
+				  out->fromId,
+				  out->fromClass);
 
 	return out;
 }
@@ -202,45 +198,54 @@ void serial::init (string port)
 	struct termios tty_old;
 	memset (&tty, 0, sizeof tty);
 
+	logger->info ("Opening: {}", port);
+
 	handle = open (port.c_str (), O_RDWR | O_NOCTTY);
 
-	/* Error Handling */
-	if (tcgetattr (handle, &tty) != 0) {
-		std::cout << "Error " << errno << " from tcgetattr: " << strerror (errno) << std::endl;
+	if (handle >= 0) {
+
+		/* Error Handling */
+		if (tcgetattr (handle, &tty) != 0) {
+			logger->error ("Error {} from tcgetattr", errno);
+		}
+
+		/* Save old tty parameters */
+		tty_old = tty;
+
+		/* Set Baud Rate */
+
+		tty.c_iflag &= ~(IMAXBEL | IXOFF | INPCK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR |
+						 ICRNL | IXON | IGNPAR);
+		tty.c_iflag |= IGNBRK;
+
+		tty.c_oflag &= ~OPOST;
+		tty.c_oflag &= ~CRTSCTS;
+
+		tty.c_lflag &=
+			~(ECHO | ECHOE | ECHOK | ECHONL | ICANON | ISIG | IEXTEN | NOFLSH | TOSTOP | PENDIN);
+		tty.c_cflag &= ~(CSIZE | PARENB);
+		tty.c_cflag |= CS8 | CREAD;
+		tty.c_cc[VMIN] = 0;	 // bylo 80
+		tty.c_cc[VTIME] = 3; // byo 3
+
+		cfsetospeed (&tty, (speed_t)B19200);
+		cfsetispeed (&tty, (speed_t)B19200);
+
+		/* Make raw */
+		//	cfmakeraw(&tty);
+
+		/* Flush Port, then applies attributes */
+		tcflush (handle, TCIFLUSH);
+		if (tcsetattr (handle, TCSANOW, &tty) != 0) {
+			logger->error ("Error {} from tcsetattr", errno);
+		}
+		else {
+			logger->info ("Serial port configured");
+		}
 	}
-
-	/* Save old tty parameters */
-	tty_old = tty;
-
-	/* Set Baud Rate */
-
-	tty.c_iflag &= ~(IMAXBEL | IXOFF | INPCK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL |
-					 IXON | IGNPAR);
-	tty.c_iflag |= IGNBRK;
-
-	tty.c_oflag &= ~OPOST;
-	tty.c_oflag &= ~CRTSCTS;
-
-	tty.c_lflag &=
-		~(ECHO | ECHOE | ECHOK | ECHONL | ICANON | ISIG | IEXTEN | NOFLSH | TOSTOP | PENDIN);
-	tty.c_cflag &= ~(CSIZE | PARENB);
-	tty.c_cflag |= CS8 | CREAD;
-	tty.c_cc[VMIN] = 0;	 // bylo 80
-	tty.c_cc[VTIME] = 3; // byo 3
-
-	cfsetospeed (&tty, (speed_t)B19200);
-	cfsetispeed (&tty, (speed_t)B19200);
-
-	/* Make raw */
-	//	cfmakeraw(&tty);
-
-	/* Flush Port, then applies attributes */
-	tcflush (handle, TCIFLUSH);
-	if (tcsetattr (handle, TCSANOW, &tty) != 0) {
-		std::cout << "Error " << errno << " from tcsetattr" << std::endl;
+	else {
+		logger->error ("Serial port cannot be opened, errno: {}", errno);
 	}
-
-	std::cout << "Port serial skonfigurowany " << std::endl;
 }
 
 void serial::test_transmit ()
@@ -249,7 +254,7 @@ void serial::test_transmit ()
 		write (handle, &i, 1);
 }
 
-short serial::checkCRC (char *pInputData)
+short serial::checkCRC (uint8_t *pInputData)
 {
 	char ii, i = 0;
 	unsigned short crc = 0xFFFF;
@@ -262,7 +267,7 @@ short serial::checkCRC (char *pInputData)
 		return -1;
 }
 
-unsigned short serial::calc_crc (unsigned short crc_buff, unsigned char input)
+unsigned short serial::calc_crc (uint16_t crc_buff, uint8_t input)
 {
 	unsigned char i;
 	unsigned short x16;

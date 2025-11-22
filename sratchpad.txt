@@ -1,0 +1,55 @@
+	/**
+	 * 	boost::program_options::options_description od("");
+
+	boost::program_options::options_description generalOptions("General Options");
+	boost::program_options::options_description_easy_init goInit = generalOptions.add_options();
+	goInit("port,P", boost::program_options::value<std::string>(&portName), " : Serial port used for communication");
+
+	boost::program_options::options_description diagnosticServices("Diagnostic Services", 120, 90);
+	boost::program_options::options_description_easy_init dsInit = diagnosticServices.add_options();
+	dsInit("restart", " : Restart ParaMETEO");
+	dsInit("read-did,r", boost::program_options::value<std::string>(&batchConfig.didToRead), " : Read DID (data-by-id) specified by hex in range 0000 to FFFF");
+	dsInit("monitor-did,m", boost::program_options::value<std::string>(&batchConfig.didToRead), " : Read specified DID each 2 second until this program is closed");
+
+	od.add(generalOptions);
+	od.add(diagnosticServices);
+
+	boost::program_options::variables_map odVariablesMap;
+	boost::program_options::store(boost::program_options::parse_command_line(argc, argv, od), odVariablesMap);
+	boost::program_options::notify(odVariablesMap);
+
+
+		bool portOpenResult = false;
+
+	std::cout << od << std::endl;
+
+	for (auto & it : odVariablesMap)	{
+    	std::cout << "D = main, odVariablesMap [" << it.first << "]" << std::endl;
+	}
+
+	if (portName.length() > 1) {
+    	std::cout << "I = main, opening user specified port " << portName << std::endl;
+		portOpenResult = s.init(portName, B9600);
+	}
+	else {
+		portOpenResult = s.init("/dev/ttyS0", B9600);
+	}
+
+	if (!portOpenResult) {
+    	std::cout << "E = main, cannot open and configure serial port. application cannot continue!" << std::endl;
+		return -1;
+	}
+
+	if (odVariablesMap.count("restart")) {
+    	std::cout << "I = main, restart will be performed instead of normal operation!" << std::endl;
+    	batchConfig.defaultBatch = false;
+    	batchConfig.monitorMode = false;
+    	batchConfig.performRestart = true;
+	}
+
+	 */
+	 
+	 
+	 
+	 	txbuffer[i++] = ProgramConfig::getMasterId ();
+	txbuffer[i++] = 0xF0;

@@ -18,9 +18,7 @@ unsigned char Routine26AnswerCbk::parseAnswer (UmbFrameRaw &in)
 {
 	unsigned char ret;
 
-	uint8_t *content = in.content;
-
-	ret = *(content + 1);
+	ret = in.content[1];
 
 	return ret;
 }

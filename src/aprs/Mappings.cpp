@@ -8,7 +8,7 @@
 #include "Mappings.h"
 
 map<ChannelUsage, MeasurementUnit> Mappings::usageUnitMapping;
-map<ChannelUsage, void*> Mappings::usageValuesMapping;
+map<ChannelUsage, std::shared_ptr<ChannelValueFoundation>> Mappings::usageValuesMapping;
 
 Mappings::Mappings() {
 	// TODO Auto-generated constructor stub

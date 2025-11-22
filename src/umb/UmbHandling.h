@@ -11,27 +11,22 @@
 #include "../serial/serial.h"
 #include "../types/ChannelValueFoundation.h"
 
-enum CommState {
-	IDLE = 0,
-	RXING = 1,
-	TXING = 2,
-	WAITING = 3
-};
+enum CommState { IDLE = 0, RXING = 1, TXING = 2, WAITING = 3 };
 
 class UmbHandling {
-private:
+  private:
+  public:
+	static int checkStatus (unsigned short deviceId, unsigned short deviceClass,
+							serial &serialPort);
+	static int testChannelQuery (serial &serialPort);
 
-public:
-	static int checkStatus(unsigned short deviceId, unsigned short deviceClass, serial& serialPort);
-	static int testChannelQuery(serial& serialPort);
+	static std::shared_ptr<ChannelValueFoundation> channelQuery (unsigned short deviceId,
+																 unsigned short deviceClass,
+																 unsigned short channelNumber,
+																 serial &serialPort);
 
-	static ChannelValueFoundation* channelQuery(unsigned short deviceId,
-											unsigned short deviceClass,
-											unsigned short channelNumber,
-											serial& serialPort);
-
-	UmbHandling();
-	virtual ~UmbHandling();
+	UmbHandling ();
+	virtual ~UmbHandling ();
 };
 
 #endif /* UMB_UMBHANDLING_H_ */

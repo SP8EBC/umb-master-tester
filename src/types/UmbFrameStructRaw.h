@@ -11,25 +11,33 @@
 #include <vector>
 
 struct UmbFrameRaw {
+
+  private:
+	UmbFrameRaw (const UmbFrameRaw &) = delete;
+	UmbFrameRaw &operator= (const UmbFrameRaw &) = delete;
+
+  public:
+	UmbFrameRaw ()
+		: protVersion (0), fromId (0), fromClass (0), ln (0), bytesRxed (0), cmdId (0),
+		  checksumRxed (0), chceksumCorrectRX (0){};
+
 	unsigned char protVersion;
 
-	unsigned char slaveId;
-	unsigned char slaveClass;
+	unsigned char fromId;		//!< device which the message is sent to
+	unsigned char fromClass;	//!< device which the message is sent to
 
-	unsigned char ln;		// LN pomiędzy STX i ETX zgodnie ze standardem
+	unsigned char toId;		//!< device which the message is sent to
+	unsigned char toClass;	//!< device which the message is sent to
+
+	unsigned char ln; //!< this is always everything between STX and ETX, so content.size() + 2
 	unsigned char bytesRxed;
 
 	unsigned char cmdId;
 
-	//unsigned char *content;		// payload
-	std::vector<unsigned char> content;
+	std::vector<unsigned char> content;	//!< payload, without command id and V10
 
 	unsigned short checksumRxed;
 	bool chceksumCorrectRX;
-
-
 };
-
-
 
 #endif /* TYPES_UMBFRAMESTRUCTRAW_H_ */

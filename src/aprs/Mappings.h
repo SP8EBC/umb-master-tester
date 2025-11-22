@@ -13,6 +13,7 @@
 #include "../types/ChannelValueFoundation.h"
 
 #include <map>
+#include <memory>
 
 using namespace std;
 
@@ -20,7 +21,7 @@ class Mappings {
 	//TODO: Naprawić wyciek pamięci!!!
 public:
 	static map<ChannelUsage, MeasurementUnit> usageUnitMapping;
-	static map<ChannelUsage, void*> usageValuesMapping;
+	static map<ChannelUsage, std::shared_ptr<ChannelValueFoundation>> usageValuesMapping;
 
 	Mappings();
 	virtual ~Mappings();

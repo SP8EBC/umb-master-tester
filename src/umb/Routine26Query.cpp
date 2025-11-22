@@ -7,28 +7,30 @@
 
 #include "Routine26Query.h"
 
-Routine26Query::Routine26Query() {
-	// TODO Auto-generated constructor stub
+#include "../config/ProgramConfig.h"
 
+Routine26Query::Routine26Query ()
+{
+	// TODO Auto-generated constructor stub
 }
 
-void Routine26Query::prepareQuery(unsigned char deviceId, unsigned char deviceClass, UmbFrameRaw& out)
+void Routine26Query::prepareQuery (unsigned char deviceId, unsigned char deviceClass,
+								   UmbFrameRaw &out)
 {
 
-	if (out != 0x00) {
-		out->cmdId = 0x26U;
-		out->slaveId = deviceId;
-		out->slaveClass = deviceClass;
+	out.cmdId = 0x26U;
+	out.toId = deviceId;
+	out.toClass = deviceClass;
 
-		out->content = new unsigned char[1];
-		*(out->content) = 0x00;
+	out.fromId =  ProgramConfig::getMasterId ();
+	out.toId = 0xF0;
 
-		out->ln = 0x02U;		// data length between STX and ETX
-	}
+	out.content.push_back(0x00);
 
+	out.ln = 0x02U; // data length between STX and ETX
 }
 
-Routine26Query::~Routine26Query() {
+Routine26Query::~Routine26Query ()
+{
 	// TODO Auto-generated destructor stub
 }
-

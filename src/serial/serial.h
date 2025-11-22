@@ -18,11 +18,16 @@
 #include <string>
 #include <memory>
 
+#include <spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+
 using namespace std;
 
 #include "../types/UmbFrameStructRaw.h"
 
 class serial {
+
+	std::shared_ptr<spdlog::logger> logger;
 
 	int handle;
 
@@ -33,10 +38,10 @@ public:
 	void init(string port);
 	void test_transmit();
 
-	void transmitUmb(UmbFrameRaw *in);
+	void transmitUmb(UmbFrameRaw *in, uint16_t spoiledCrc = 0);
 	std::shared_ptr<UmbFrameRaw> receiveUmb(unsigned short max_timeout);
 
-	short checkCRC(char* pInputData);
+	short checkCRC(uint8_t* pInputData);
 	unsigned short calc_crc(unsigned short crc_buff, unsigned char input);
 
 	serial();

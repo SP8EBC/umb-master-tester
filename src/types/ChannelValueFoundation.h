@@ -8,25 +8,31 @@
 #ifndef TYPES_CHANNELVALUEFOUNDATION_H_
 #define TYPES_CHANNELVALUEFOUNDATION_H_
 
+#include <cstdint>
 #include <string>
+#include <vector>
 
 #include "MeasurementUnit.h"
 
 using namespace std;
 
 class ChannelValueFoundation {
-protected:
+  protected:
+	void *value;
 
-	void* value;
+  public:
+	virtual string toString () = 0;
+	virtual string toAprsConvertedString (MeasurementUnit from, MeasurementUnit to) = 0;
+	virtual string getType () = 0;
 
-public:
+	/**
+	 * Puts raw binary of this channel value (in LE)
+	 * @param from
+	 */
+	virtual void putInto (std::vector<uint8_t> &vector, std::vector<uint8_t>::iterator &from) = 0;
 
-	virtual string toString() = 0;
-	virtual string toAprsConvertedString(MeasurementUnit from, MeasurementUnit to) = 0;
-	virtual string getType() = 0;
-
-	ChannelValueFoundation();
-	virtual ~ChannelValueFoundation();
+	ChannelValueFoundation ();
+	virtual ~ChannelValueFoundation ();
 };
 
 #endif /* TYPES_CHANNELVALUEFOUNDATION_H_ */

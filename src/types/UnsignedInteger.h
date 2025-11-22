@@ -1,29 +1,27 @@
 /*
- * Integer.h
+ * UnsignedInteger.h
  *
- *  Created on: 16.09.2017
+ *  Created on: Nov 21, 2025
  *      Author: mateusz
  */
 
-#ifndef TYPES_INTEGER_H_
-#define TYPES_INTEGER_H_
+#ifndef SRC_TYPES_UNSIGNEDINTEGER_H_
+#define SRC_TYPES_UNSIGNEDINTEGER_H_
 
 #include "ChannelValueFoundation.h"
 
-#include <string>
+#include <cstdint>
 
-using namespace std;
+class UnsignedInteger : public ChannelValueFoundation {
 
-class Integer: public ChannelValueFoundation {
-
-	int32_t store;
+	uint32_t store;
 
 	static const string type;
 
 public:
-	Integer();
-	Integer(int32_t init);
-	virtual ~Integer();
+	UnsignedInteger();
+	UnsignedInteger(uint32_t init);
+	virtual ~UnsignedInteger();
 
 	virtual string getType();
 	virtual string toAprsConvertedString(MeasurementUnit from, MeasurementUnit to);
@@ -34,4 +32,4 @@ public:
 	void setValue(int store);
 };
 
-#endif /* TYPES_INTEGER_H_ */
+#endif /* SRC_TYPES_UNSIGNEDINTEGER_H_ */
