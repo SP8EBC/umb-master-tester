@@ -70,7 +70,9 @@ Float::Float (float init)
 
 void Float::putInto (std::vector<uint8_t> &vector, std::vector<uint8_t>::iterator &from)
 {
-	vector.push_back(FLOAT);	// channel type
+	vector.insert(from, FLOAT); // channel type
+
+	from += sizeof(uint8_t); // size of field 'channel type'
 
 	void* ptr = &this->store;
 	boost::span<uint8_t, sizeof(float)> s((uint8_t*)ptr, sizeof(float));

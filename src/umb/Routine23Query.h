@@ -35,7 +35,7 @@ class Routine23Query {
 	 * @param deviceClass of slave device to query
 	 * @param out
 	 */
-	static void prepareQuery (unsigned short channelNumber, unsigned char deviceId,
+	static void prepareQueryToSlave (unsigned short channelNumber, unsigned char deviceId,
 							  unsigned char deviceClass, UmbFrameRaw &out);
 
 	/**

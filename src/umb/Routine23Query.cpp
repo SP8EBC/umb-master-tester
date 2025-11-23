@@ -21,7 +21,7 @@ Routine23Query::~Routine23Query ()
 	// TODO Auto-generated destructor stub
 }
 
-void Routine23Query::prepareQuery (unsigned short channelNumber, unsigned char deviceId,
+void Routine23Query::prepareQueryToSlave (unsigned short channelNumber, unsigned char deviceId,
 								   unsigned char deviceClass, UmbFrameRaw &out)
 {
 	out.cmdId = 0x23U;
@@ -56,7 +56,7 @@ Routine23Query::parseQueryFromMaster (std::shared_ptr<UmbFrameRaw> &received)
 
 		out->channelsNumbers.push_back(ch);
 
-		logger->debug("from master, channel: {}", ch);
+		logger->info("from master, channel: {}", ch);
 	}
 
 	out->deviceClass = received->fromClass;

@@ -74,12 +74,13 @@ void serial::transmitUmb (UmbFrameRaw *in, uint16_t spoiledCrc)
 	}
 	else
 	{
+		logger->warn ("Spoiling CRC to value {:x}", spoiledCrc);
 		txbuffer[i++] = spoiledCrc & 0xFF;
 		txbuffer[i++] = (spoiledCrc & 0xFF00) >> 8;
 	}
 	txbuffer[i++] = EOT;
 
-	logger->trace ("TX: {:n}", spdlog::to_hex (txbuffer, txbuffer + size));
+	logger->trace ("TX: {:n}", spdlog::to_hex (txbuffer, txbuffer + i, i));
 
 	write (handle, txbuffer, i);
 }
@@ -174,10 +175,14 @@ std::shared_ptr<UmbFrameRaw> serial::receiveUmb (unsigned short max_timeout)
 	for (int j = 0; j < (out->bytesRxed - 3); j++)
 		crc = calc_crc (crc, rx[j]);
 
-	if (crc == out->checksumRxed)
+	if (crc == out->checksumRxed) {
 		out->chceksumCorrectRX = true;
+	}
+	else {
+		logger->warn("crc error on reception, received: 0x{:x}, calculated: 0x{:x}", out->checksumRxed, crc);
+	}
 
-	logger->info ("ln: {}, bytesRxed: {}, cmdId: 0x{:x}, deviceId: 0x{:x}, deviceClass: 0x{:x}",
+	logger->info ("ln: {}, bytesRxed: {}, cmdId: 0x{:x}, fromId: 0x{:x}, fromClass: 0x{:x}",
 				  out->ln,
 				  out->bytesRxed,
 				  out->cmdId,
@@ -207,6 +212,7 @@ void serial::init (string port)
 		/* Error Handling */
 		if (tcgetattr (handle, &tty) != 0) {
 			logger->error ("Error {} from tcgetattr", errno);
+			throw std::runtime_error("tcgetattr failed");
 		}
 
 		/* Save old tty parameters */
@@ -238,6 +244,7 @@ void serial::init (string port)
 		tcflush (handle, TCIFLUSH);
 		if (tcsetattr (handle, TCSANOW, &tty) != 0) {
 			logger->error ("Error {} from tcsetattr", errno);
+			throw std::runtime_error("tcsetattr failed");
 		}
 		else {
 			logger->info ("Serial port configured");
@@ -245,6 +252,7 @@ void serial::init (string port)
 	}
 	else {
 		logger->error ("Serial port cannot be opened, errno: {}", errno);
+		throw std::runtime_error("Serial port cannot be opened");
 	}
 }
 

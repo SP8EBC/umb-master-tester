@@ -45,11 +45,15 @@ Routine23AnswerCbk::createAnswerToMaster (uint8_t status, std::vector<uint16_t> 
 		const uint16_t channel = chnsNumber[i];
 		const std::shared_ptr<ChannelValueFoundation> value = chnsValues[i];
 
+		logger->info("to master, channel: {}, value: {}", channel, value->toString());
+
 		out->content.push_back((uint8_t)(channel & 0xFF));
 		out->content.push_back((uint8_t)((channel >> 8) & 0xFF));
 		auto end = out->content.end();
 		value->putInto(out->content, end);
 	}
+
+	out->ln = out->content.size() + 2;
 
 	return out;
 }
@@ -59,7 +63,7 @@ Routine23AnswerCbk::~Routine23AnswerCbk ()
 	// TODO Auto-generated destructor stub
 }
 
-std::shared_ptr<ChannelValueFoundation> Routine23AnswerCbk::parseAnswer (UmbFrameRaw &in)
+std::shared_ptr<ChannelValueFoundation> Routine23AnswerCbk::parseAnswerFromSlave (UmbFrameRaw &in)
 {
 	std::shared_ptr<ChannelValueFoundation> out;
 

@@ -34,7 +34,7 @@ int UmbHandling::checkStatus (unsigned short deviceId, unsigned short deviceClas
 	serialPort.transmitUmb (&f);
 	std::shared_ptr<UmbFrameRaw> o = serialPort.receiveUmb (2);
 	if (o) {
-		uint8_t s = Routine26AnswerCbk::parseAnswer (*o);
+		uint8_t s = Routine26AnswerCbk::parseAnswerFromSlave (*o);
 		printf ("status: %d", s);
 	}
 
@@ -45,12 +45,12 @@ int UmbHandling::testChannelQuery (serial &serialPort)
 {
 	UmbFrameRaw f;
 
-	Routine23Query::prepareQuery (0x64, 1, 8, f);
+	Routine23Query::prepareQueryToSlave (0x64, 1, 8, f);
 	serialPort.transmitUmb (&f);
 
 	std::shared_ptr<UmbFrameRaw> o = serialPort.receiveUmb (2);
 	if (o) {
-		std::shared_ptr<ChannelValueFoundation> ch = Routine23AnswerCbk::parseAnswer (*o);
+		std::shared_ptr<ChannelValueFoundation> ch = Routine23AnswerCbk::parseAnswerFromSlave (*o);
 
 		std::cout << "temperatura: " << ch->toString () << endl;
 	}
@@ -67,14 +67,14 @@ std::shared_ptr<ChannelValueFoundation> UmbHandling::channelQuery (unsigned shor
 
 	std::shared_ptr<ChannelValueFoundation> ch;
 
-	Routine23Query::prepareQuery (channelNumber, deviceId, deviceClass, f);
+	Routine23Query::prepareQueryToSlave (channelNumber, deviceId, deviceClass, f);
 
 	std::cout << "channelQuery - channel: " << channelNumber << " - ln: " << (int)f.ln << std::endl;
 
 	serialPort.transmitUmb (&f);
 	std::shared_ptr<UmbFrameRaw> o = serialPort.receiveUmb (2);
 	if (o) {
-		ch = Routine23AnswerCbk::parseAnswer (*o);
+		ch = Routine23AnswerCbk::parseAnswerFromSlave (*o);
 
 		std::cout << "temperatura: " << ch->toString () << endl;
 	}

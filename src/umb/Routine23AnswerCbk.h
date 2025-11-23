@@ -20,7 +20,7 @@ class Routine23AnswerCbk {
 	static std::shared_ptr<spdlog::logger> logger;
 
   public:
-	static std::shared_ptr<ChannelValueFoundation> parseAnswer (UmbFrameRaw &in);
+	static std::shared_ptr<ChannelValueFoundation> parseAnswerFromSlave (UmbFrameRaw &in);
 
 	/**
 	 * Create an answer which will be sent from this slave to master
